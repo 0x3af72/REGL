@@ -1,5 +1,7 @@
 #include <iostream>
 #include <unordered_map>
+#include <vector>
+#include <string>
 
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
@@ -8,13 +10,7 @@
 #pragma once
 
 std::string _default_chars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
-
-// Color class. Used in cui.hpp.
-class CUI_Color{
-    public:
-        int r, g, b;
-        CUI_Color(int r, int g, int b){this->r = r; this->g = g, this->b = b;};
-};
+SDL_Rect _FILL_RECT_ALL = {0, 0, 10000, 10000};
 
 // Character class for managing characters and their respective textures.
 class Character{
@@ -29,7 +25,7 @@ class Character{
         SDL_Texture* texture;
         
         // render function
-        int render(SDL_Renderer* renderer, int x, int y, float size);
+        int render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect);
 
         // constructor
         Character(SDL_Renderer* renderer, SDL_Surface* character_surf);
@@ -51,13 +47,30 @@ Character::Character(SDL_Renderer* renderer, SDL_Surface* character_surf){
 
 }
 
-int Character::render(SDL_Renderer* renderer, int x, int y, float size){
+int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect){
 
-    // new render rect
-    SDL_Rect rect = {x, y, int(size * width), int(size * height)};
+    // get original rect
+    SDL_Rect original_rect = {x, y, int(width * size), int(height * size)};
+
+    // calculate crop rect
+    SDL_Rect crop_rect = getIncludeCrop(original_rect, include_rect);
+
+    // fix crop rect
+    crop_rect.w *= 20 / size;
+    crop_rect.h *= 20 / size;
+    crop_rect.x *= 20 / size;
+    crop_rect.y *= 20 / size;
+
+    // render rect (SIMPLIFY THIS)
+    SDL_Rect rect = {
+        int(x + crop_rect.x / 20 * size),
+        int(y + 2 + crop_rect.y / 20 * size),
+        int(size * width * crop_rect.w / 20 / width),
+        int(size * height * crop_rect.h / 20 / height),
+    };
 
     // render
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
+    SDL_RenderCopy(renderer, texture, &crop_rect, &rect);
 
     // return width
     return size * width;
@@ -67,7 +80,7 @@ int Character::render(SDL_Renderer* renderer, int x, int y, float size){
 // Map of colors and maps of characters and their corresponding textures.
 std::unordered_map<std::string, std::unordered_map<std::string, Character>> character_map;
 
-// // Load a font file and edit the character map accordingly.
+// Load a font file and edit the character map accordingly.
 void loadFont(SDL_Renderer* renderer, std::string color_name, std::string font_file, Uint8 color_r, Uint8 color_g, Uint8 color_b, std::string characters = _default_chars){
 
     // load font
@@ -87,7 +100,7 @@ void loadFont(SDL_Renderer* renderer, std::string color_name, std::string font_f
 }
 
 // Render text.
-void renderText(SDL_Renderer* renderer, std::string color_name, std::string text, int x, int y, float size, float max = 10000){
+void renderText(SDL_Renderer* renderer, std::string color_name, std::string text, int x, int y, float size, float max = 10000, SDL_Rect include_rect = _FILL_RECT_ALL){
 
     int original_x = x;
 
@@ -95,7 +108,7 @@ void renderText(SDL_Renderer* renderer, std::string color_name, std::string text
     for (char& character: text){
 
         std::string char_str(1, character);
-        x += character_map[color_name][char_str].render(renderer, x, y, size);
+        x += character_map[color_name][char_str].render(renderer, x, y, size, include_rect);
 
         // check if more than max width?
         if (x - original_x >= max){

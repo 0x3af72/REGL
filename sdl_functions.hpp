@@ -31,3 +31,30 @@ SDL_Texture* loadTexture(SDL_Renderer* renderer, std::string path){
     return loaded_texture;
 
 }
+
+// Get relative crop rect of rect supposed to be rendered
+SDL_Rect getIncludeCrop(SDL_Rect original_rect, SDL_Rect include_rect){
+
+    // crop rect
+    SDL_Rect crop_rect;
+
+    // get intersection
+    SDL_IntersectRect(&original_rect, &include_rect, &crop_rect);
+
+    // fix crop rect
+    crop_rect.x = crop_rect.x - original_rect.x;
+    crop_rect.y = crop_rect.y - original_rect.y;
+    crop_rect.h -= 2;
+
+    // render rect (dont return this at the moment)
+    // SDL_Rect rect = {
+    //     int(original_rect.x + crop_rect.x),
+    //     int(original_rect.y + 2 + crop_rect.y),
+    //     int(crop_rect.w),
+    //     int(crop_rect.h - 2),
+    // };
+
+    // return
+    return crop_rect;
+
+}

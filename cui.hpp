@@ -6,6 +6,7 @@
 #include "extern_functions.hpp"
 #include "cui_objects.hpp"
 #include "font_renderer.hpp"
+#include "default_colors.hpp"
 
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
@@ -39,26 +40,6 @@ SDL_Rect mouse_rect;
 // CUI Objects
 // std::vector<CUI_Object*> ui_objects;
 std::vector<std::unique_ptr<CUI_Object>> ui_objects;
-
-// Builtin colors.
-std::unordered_map<std::string, CUI_Color> colors_to_init = {
-    {"white", CUI_Color(255, 255, 254)},
-    {"black", CUI_Color(0, 0, 0)},
-    {"red", CUI_Color(255, 0, 0)},
-    {"orange", CUI_Color(255, 140, 0)},
-    {"yellow", CUI_Color(255, 255, 0)},
-    {"blue", CUI_Color(0, 0, 255)},
-    {"green", CUI_Color(0, 255, 0)},
-    {"purple", CUI_Color(230, 230, 250)},
-};
-std::string CUI_COLOR_WHITE = "white";
-std::string CUI_COLOR_BLACK = "black";
-std::string CUI_COLOR_RED = "red";
-std::string CUI_COLOR_ORANGE = "orange";
-std::string CUI_COLOR_YELLOW = "yellow";
-std::string CUI_COLOR_BLUE = "blue";
-std::string CUI_COLOR_GREEN = "green";
-std::string CUI_COLOR_PURPLE = "purple";
 
 // Initialize SDL2.
 void cuiInit(){
@@ -148,40 +129,46 @@ bool cuiUpdate(){
     // send events to objects and update and render
     for (std::unique_ptr<CUI_Object>& object: ui_objects){
 
-        // send events if collided with mouse
-        if (object->collides(mouse_rect)){
+        if (object->enabled){
 
-            // send hold
-            if (mouse_held && !sent_mouse_held){
-                object->mouseHeld(mouse_rect);
-                sent_mouse_held = true;
-            }
+            // send events if collided with mouse
+            if (object->collides(mouse_rect)){
 
-            // send clicked
-            if (mouse_clicked && !sent_mouse_clicked){
-                object->clicked(mouse_rect);
-                sent_mouse_clicked = true;
-            }
+                // send hold
+                if (mouse_held && !sent_mouse_held){
+                    object->mouseHeld(mouse_rect);
+                    sent_mouse_held = true;
+                }
 
-            // send mouse up
-            if (mouse_up && !sent_mouse_up){
-                object->mouseUp(mouse_rect);
-                sent_mouse_up = true;
-            }
+                // send clicked
+                if (mouse_clicked && !sent_mouse_clicked){
+                    object->clicked(mouse_rect);
+                    sent_mouse_clicked = true;
+                }
 
-            // send scroll
-            if (scrolled != 0 && !sent_scrolled){
-                object->scrolled(mouse_rect, scrolled);
-                sent_scrolled = true;
+                // send mouse up
+                if (mouse_up && !sent_mouse_up){
+                    object->mouseUp(mouse_rect);
+                    sent_mouse_up = true;
+                }
+
+                // send scroll
+                if (scrolled != 0 && !sent_scrolled){
+                    object->scrolled(mouse_rect, scrolled);
+                    sent_scrolled = true;
+                }
+
             }
+            
+            object->update();
 
         }
-
-        object->update();
     }
 
     for (int index = ui_objects.size() - 1; index != -1; index --){
-        ui_objects[index]->render(cui_renderer);
+        if (ui_objects[index]->enabled){
+            ui_objects[index]->render(cui_renderer);
+        }
     }
 
     // present renderer
@@ -193,15 +180,14 @@ bool cuiUpdate(){
         SDL_Delay(_FRAME_DELAY - _frametime);
     }
     _framestart = SDL_GetTicks();
+    // std::cout << _FRAME_DELAY - _frametime << "\n";
 
     return true;
 }
 
 // Function to create a window.
-CUI_Window* createWindow(std::string name, int x, int y, int width, int height, Uint16 color_r, Uint16 color_g, Uint16 color_b, Uint16 color_a){
-    // CUI_Window created_window(name, x, y, width, height, color_r, color_g, color_b, color_a);
-    // CUI_Window* window_ptr = &created_window;
-    auto window_ptr = std::make_unique<CUI_Window>(name, x, y, width, height, color_r, color_g, color_b, color_a);
+CUI_Window* createWindow(std::string name, int x, int y, int width, int height, CUI_Color color, CUI_Color bar_color, std::string bar_text_color){
+    auto window_ptr = std::make_unique<CUI_Window>(name, x, y, width, height, color, bar_color, bar_text_color);
     auto returned_ptr = window_ptr.get();
     ui_objects.push_back(std::move(window_ptr));
     return returned_ptr;

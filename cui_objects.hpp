@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <functional>
 
 #include "extern_functions.hpp"
 #include "sdl_functions.hpp"
@@ -10,7 +11,7 @@
 
 #pragma once
 
-// Class prototypes
+// Class forward declarations.
 class CUI_Object;
 class CUI_ChildObject;
 class CUI_Window;
@@ -21,6 +22,22 @@ extern bool mouse_held;
 extern bool mouse_clicked;
 extern SDL_Rect mouse_rect;
 
+// Color class. Used in cui.hpp.
+class CUI_Color{
+    public:
+        int r, g, b, a;
+        CUI_Color(int r, int g, int b, int a = 255){
+            this->r = r;
+            this->g = g;
+            this->b = b;
+            this->a = a;
+            if (r == 255 && g == 255 && b == 255){
+                this->b = 254;
+            }
+        };
+        CUI_Color() = default;
+};
+
 // Base class for all rendered objects.
 class CUI_Object{
 
@@ -29,6 +46,9 @@ class CUI_Object{
         // positions
         int x, y;
         int width, height;
+
+        // dont do anything to it if disabled
+        bool enabled = true;
 
         // render info
         Uint16 color_r, color_g, color_b, color_a;
@@ -64,12 +84,12 @@ class CUI_Object{
         virtual ~CUI_Object(){};
 
         // constructor
-        CUI_Object(int x, int y, int width, int height, Uint16 color_r, Uint16 color_g, Uint16 color_b, Uint16 color_a);
+        CUI_Object(int x, int y, int width, int height, CUI_Color color);
         CUI_Object() = default;
 
 };
 
-CUI_Object::CUI_Object(int x, int y, int width, int height, Uint16 color_r, Uint16 color_g, Uint16 color_b, Uint16 color_a){
+CUI_Object::CUI_Object(int x, int y, int width, int height, CUI_Color color){
 
     // set dimension and positions
     this->x = x;
@@ -78,10 +98,10 @@ CUI_Object::CUI_Object(int x, int y, int width, int height, Uint16 color_r, Uint
     this->height = height;
 
     // set color values
-    this->color_r = color_r;
-    this->color_g = color_g;
-    this->color_b = color_b;
-    this->color_a = color_a;
+    this->color_r = color.r;
+    this->color_g = color.g;
+    this->color_b = color.b;
+    this->color_a = color.a;
 
 }
 
@@ -114,6 +134,21 @@ class CUI_ChildObject{
         // different render function from cui objects
         virtual void render(SDL_Renderer* renderer, int x, int y, CUI_Window* window){};
 
+        // click function
+        virtual void clicked(SDL_Rect mouse_rect){};
+
+        // mouse held function
+        virtual void mouseHeld(SDL_Rect mouse_rect){};
+
+        // mouse up function
+        virtual void mouseUp(SDL_Rect mouse_rect){};
+
+        // scrolled function
+        virtual void scrolled(SDL_Rect mouse_rect, int scrolled){};
+
+        // input function
+        void input(SDL_Keycode key);
+
         // destructor
         ~CUI_ChildObject(){};
 
@@ -130,6 +165,8 @@ class CUI_Window : public CUI_Object{
 
         std::string name; // window name
         SDL_Rect bar_rect; // bar rect
+        CUI_Color bar_color; // bar color
+        std::string bar_text_color; // bar text color
         bool is_held = false; // bool for checking if window is held
         int hold_origin_x, hold_origin_y; // hold origins
         int before_held_x, before_held_y; // before holding positions
@@ -161,15 +198,16 @@ class CUI_Window : public CUI_Object{
         void update() override;
 
         // constructor
-        CUI_Window(std::string name, int x, int y, int width, int height, Uint16 color_r, Uint16 color_g, Uint16 color_b, Uint16 color_a);
+        CUI_Window(std::string name, int x, int y, int width, int height, CUI_Color color, CUI_Color bar_color, std::string bar_text_color);
 
 };
 
-CUI_Window::CUI_Window(std::string name, int x, int y, int width, int height, Uint16 color_r, Uint16 color_g, Uint16 color_b, Uint16 color_a)
-    : CUI_Object(x, y, width, height, color_r, color_g, color_b, color_a){
+CUI_Window::CUI_Window(std::string name, int x, int y, int width, int height, CUI_Color color, CUI_Color bar_color, std::string bar_text_color)
+    : CUI_Object(x, y, width, height, color){
 
-    // set name
-    this->name = name;
+    this->name = name; // set name
+    this->bar_color = bar_color; // set bar color
+    this->bar_text_color = bar_text_color; // set bar text color
 
 }
 
@@ -234,12 +272,12 @@ void CUI_Window::mouseUp(SDL_Rect mouse_rect){
 
 void CUI_Window::scrolled(SDL_Rect mouse_rect, int scrolled){
     if (scrolled == -1){
-        viewport_y += min(SCROLL_SCALE, std::abs(35 - viewport_y));
+        viewport_y += cui_min(SCROLL_SCALE, std::abs(35 - viewport_y));
     } else if (scrolled == 1){
 
         // change viewport y
         if (child_objects_height > height){
-            viewport_y -= min(SCROLL_SCALE, std::abs(child_objects_height - height + viewport_y));
+            viewport_y -= cui_min(SCROLL_SCALE, std::abs(child_objects_height - height + viewport_y));
         }
     }
 }
@@ -259,22 +297,14 @@ void CUI_Window::render(SDL_Renderer* renderer){
 
     int render_y = y + viewport_y;
     child_objects_height = 0; // reset child objects height and recalculate
-    bool showed_cover = false; // block showing excess stuff
     for (std::unique_ptr<CUI_ChildObject>& child_object: child_objects){
 
         // check if out of height
-        if (!(render_y > y + height) && (render_y >= y) && !minimized){
+        if (!(render_y > y + height) && (render_y + child_object->nextline >= y) && !minimized){
 
             // render and increase render y
             child_object->render(renderer, x + 10, render_y, this);
 
-        }
-
-        // check if excess stuff is showed
-        if (render_y + child_object->nextline > y + height && !showed_cover){
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            SDL_Rect cover_rect = {x, y + height + 35, width, child_object->nextline};
-            SDL_RenderFillRect(renderer, &cover_rect);
         }
 
         // increase render y
@@ -285,21 +315,16 @@ void CUI_Window::render(SDL_Renderer* renderer){
 
     }
 
-    // just cover the right side of the window. kinda messy though, might want to rework this in the future
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_Rect width_cover_rect = {x + width, y, 300, width};
-    SDL_RenderFillRect(renderer, &width_cover_rect);
-
     // bar color
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 128);
+    SDL_SetRenderDrawColor(renderer, bar_color.r, bar_color.g, bar_color.b, 255);
 
     // draw bar
     SDL_RenderFillRect(renderer, &bar_rect);
 
     // write window title
-    float text_width = textWidth(name, "white", 0.7, width * 0.9) / 2;
+    float text_width = textWidth(name, bar_text_color, 0.7, width * 0.9) / 2;
     float render_x = x + (width / 2) - text_width;
-    renderText(renderer, "white", name, render_x, y + 5, 0.7, width * 0.9);
+    renderText(renderer, bar_text_color, name, render_x, y + 5, 0.7, width * 0.9);
 
 }
 
@@ -347,5 +372,14 @@ CUI_Text::CUI_Text(std::string text_content, float size, std::string color, int 
 }
 
 void CUI_Text::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window){
-    renderText(renderer, color, text_content, x, y, size, window->width);
+    renderText(renderer, color, text_content, x, y, size, window->width, window->rect);
 }
+
+// Button class.
+class CUI_Button : public CUI_ChildObject{
+
+    public:
+
+        std::function<void()> on_click; // function called when clicked
+
+};
