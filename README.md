@@ -1,6 +1,7 @@
 # CUI
-CUI is a lightweight GUI library in C++ and uses SDL2 for rendering.
+CUI is a lightweight GUI library in C++ which uses SDL2 for rendering.
 
+# COMPILING
 To use CUI, you'll have to link some SDL2 binaries. A sample compile command would be:
 
 
