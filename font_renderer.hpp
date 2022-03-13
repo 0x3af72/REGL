@@ -81,7 +81,13 @@ int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect
 std::unordered_map<std::string, std::unordered_map<std::string, Character>> character_map;
 
 // Load a font file and edit the character map accordingly.
-void loadFont(SDL_Renderer* renderer, std::string color_name, std::string font_file, Uint8 color_r, Uint8 color_g, Uint8 color_b, std::string characters = _default_chars){
+void loadFont(
+    SDL_Renderer* renderer,
+    std::string color_name,
+    std::string font_file,
+    Uint8 color_r, Uint8 color_g, Uint8 color_b,
+    std::string characters = _default_chars
+){
 
     // load font
     TTF_Font* font = TTF_OpenFont(font_file.c_str(), 500);
@@ -100,7 +106,14 @@ void loadFont(SDL_Renderer* renderer, std::string color_name, std::string font_f
 }
 
 // Render text.
-void renderText(SDL_Renderer* renderer, std::string color_name, std::string text, int x, int y, float size, float max = 10000, SDL_Rect include_rect = _FILL_RECT_ALL){
+void renderText(
+    SDL_Renderer* renderer,
+    std::string color_name,
+    std::string text,
+    int x, int y,
+    float size, float max = 10000,
+    SDL_Rect include_rect = _FILL_RECT_ALL
+){
 
     int original_x = x;
 
@@ -122,6 +135,8 @@ void renderText(SDL_Renderer* renderer, std::string color_name, std::string text
 // Get width of text to be rendered.
 float textWidth(std::string text, std::string color_name, float size, float max = 10000){
 
+    if (!text.size()){return 0;}
+
     float width = 0;
 
     // go through widths
@@ -138,5 +153,15 @@ float textWidth(std::string text, std::string color_name, float size, float max 
     }
 
     return width;
+
+}
+
+// Get height of text to be rendered.
+float textHeight(std::string text, std::string color_name, float size){
+
+    if (!text.size()){return 0;}
+
+    // all characters have the same height
+    return character_map[color_name][text.substr(0, 1)].height * size;
 
 }

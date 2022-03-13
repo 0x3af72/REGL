@@ -17,7 +17,7 @@ int main(int argc, char* argv[]){
         CUI_COLORCODE_GREEN
     );
     CUI_Text* txt = addText(test_2, "hello", 1, CUI_COLORCODE_ORANGE, 50);
-    CUI_Text* txt2 = addText(test_2, "verylongtexttest 1 2 3 22 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 2 21 22 23 24", 2.2, CUI_COLORCODE_ORANGE, 50);
+    addText(test_2, "vppppptexttest 1 2 3 22 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 2 21 22 23 24", 2.2, CUI_COLORCODE_ORANGE, 50);
     std::vector<CUI_Text*> texts_2;
 
     CUI_Window* test_win = createWindow(
@@ -28,7 +28,16 @@ int main(int argc, char* argv[]){
         CUI_Color(200, 200, 200),
         CUI_COLORCODE_BLACK
     );
-    CUI_Text* hmm = addText(test_win, "black text", 1, CUI_COLORCODE_BLACK, 50);
+    int click_count = 0;
+    addButton(
+        test_win,
+        "click me",
+        CUI_COLORCODE_BLUE,
+        1,
+        [&click_count](){click_count += 1; std::cout << "click " << click_count << "\n";},
+        200, 100, 110, CUI_Color(200, 200, 200), CUI_Color(100, 100, 100), CUI_Color(50, 50, 50)
+    );
+    addText(test_win, "black text", 1, CUI_COLORCODE_BLACK, 50);
     std::vector<CUI_Text*> texts = {
         addText(test_win, "helloworld", 3, CUI_COLORCODE_BLUE, 80),
     };

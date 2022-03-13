@@ -31,6 +31,7 @@ int _frametime;
 bool mouse_clicked, sent_mouse_clicked;
 bool mouse_held, sent_mouse_held;
 bool mouse_up, sent_mouse_up;
+bool sent_hovered;
 int scrolled;
 bool sent_scrolled;
 
@@ -38,7 +39,6 @@ bool sent_scrolled;
 SDL_Rect mouse_rect;
 
 // CUI Objects
-// std::vector<CUI_Object*> ui_objects;
 std::vector<std::unique_ptr<CUI_Object>> ui_objects;
 
 // Initialize SDL2.
@@ -91,6 +91,7 @@ bool cuiUpdate(){
     sent_mouse_up = false;
     scrolled = 0;
     sent_scrolled = false;
+    sent_hovered = false;
 
     // clear renderer
     SDL_SetRenderDrawColor(cui_renderer, 255, 255, 255, 255);
@@ -134,16 +135,22 @@ bool cuiUpdate(){
             // send events if collided with mouse
             if (object->collides(mouse_rect)){
 
-                // send hold
-                if (mouse_held && !sent_mouse_held){
-                    object->mouseHeld(mouse_rect);
-                    sent_mouse_held = true;
+                // send hover
+                if (!sent_hovered){
+                    object->hovered(mouse_rect);
+                    sent_hovered = true;
                 }
 
                 // send clicked
                 if (mouse_clicked && !sent_mouse_clicked){
                     object->clicked(mouse_rect);
                     sent_mouse_clicked = true;
+                }
+
+                // send hold
+                if (mouse_held && !sent_mouse_held){
+                    object->mouseHeld(mouse_rect);
+                    sent_mouse_held = true;
                 }
 
                 // send mouse up
@@ -185,18 +192,43 @@ bool cuiUpdate(){
     return true;
 }
 
-// Function to create a window.
-CUI_Window* createWindow(std::string name, int x, int y, int width, int height, CUI_Color color, CUI_Color bar_color, std::string bar_text_color){
+// Create a CUI_Window.
+CUI_Window* createWindow(
+    std::string name,
+    int x, int y,
+    int width, int height,
+    CUI_Color color, CUI_Color bar_color, std::string bar_text_color
+){
     auto window_ptr = std::make_unique<CUI_Window>(name, x, y, width, height, color, bar_color, bar_text_color);
     auto returned_ptr = window_ptr.get();
     ui_objects.push_back(std::move(window_ptr));
     return returned_ptr;
 }
 
-// Function to add text to a window.
-CUI_Text* addText(CUI_Window* window, std::string text_content, float size, std::string color, int nextline){
+// Add CUI_Text to a window.
+CUI_Text* addText(
+    CUI_Window* window,
+    std::string text_content,
+    float size,
+    std::string color,
+    int nextline
+){
     auto text_object_ptr = std::make_unique<CUI_Text>(text_content, size, color, nextline);
     auto returned_ptr = text_object_ptr.get();
     window->child_objects.push_back(std::move(text_object_ptr));
+    return returned_ptr;
+}
+
+// Add CUI_Button to a window.
+CUI_Button* addButton(
+    CUI_Window* window,
+    std::string text, std::string text_color, float text_size,
+    std::function<void()> on_click,
+    int width, int height, int nextline,
+    CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
+){
+    auto button_object_ptr = std::make_unique<CUI_Button>(text, text_color, text_size, on_click, width, height, nextline, color, hovered_color, pressed_color);
+    auto returned_ptr = button_object_ptr.get();
+    window->child_objects.push_back(std::move(button_object_ptr));
     return returned_ptr;
 }

@@ -16,6 +16,7 @@ class CUI_Object;
 class CUI_ChildObject;
 class CUI_Window;
 class CUI_Text;
+class CUI_Button;
 
 // Variables that CUI_Objects might need.
 extern bool mouse_held;
@@ -45,6 +46,8 @@ class CUI_Object{
 
         // positions
         int x, y;
+
+        // dimensions
         int width, height;
 
         // dont do anything to it if disabled
@@ -70,6 +73,9 @@ class CUI_Object{
 
         // mouse up function
         virtual void mouseUp(SDL_Rect mouse_rect){};
+
+        // hovered function
+        virtual void hovered(SDL_Rect mouse_rect){};
 
         // scrolled function
         virtual void scrolled(SDL_Rect mouse_rect, int scrolled){};
@@ -146,6 +152,12 @@ class CUI_ChildObject{
         // scrolled function
         virtual void scrolled(SDL_Rect mouse_rect, int scrolled){};
 
+        // hovered function
+        virtual void hovered(SDL_Rect mouse_rect){};
+
+        // collide function
+        virtual bool collides(SDL_Rect other_rect, int x, int y){return false;};
+
         // input function
         void input(SDL_Keycode key);
 
@@ -191,24 +203,53 @@ class CUI_Window : public CUI_Object{
         // custom scroll function
         void scrolled(SDL_Rect mouse_rect, int scrolled) override;
 
+        // custom hovered function
+        void hovered(SDL_Rect mouse_rect) override;
+
         // custom collides function
         bool collides(SDL_Rect other_rect) override;
 
         // custom update function
         void update() override;
 
+        // return a child obejct that collides with another rect
+        bool collidedChild(SDL_Rect other_rect, CUI_ChildObject* &result_child);
+
         // constructor
-        CUI_Window(std::string name, int x, int y, int width, int height, CUI_Color color, CUI_Color bar_color, std::string bar_text_color);
+        CUI_Window(
+            std::string name,
+            int x, int y,
+            int width, int height,
+            CUI_Color color, CUI_Color bar_color, std::string bar_text_color
+        );
 
 };
 
-CUI_Window::CUI_Window(std::string name, int x, int y, int width, int height, CUI_Color color, CUI_Color bar_color, std::string bar_text_color)
-    : CUI_Object(x, y, width, height, color){
+CUI_Window::CUI_Window(
+    std::string name,
+    int x, int y,
+    int width, int height,
+    CUI_Color color, CUI_Color bar_color, std::string bar_text_color
+) : CUI_Object(x, y, width, height, color){
 
     this->name = name; // set name
     this->bar_color = bar_color; // set bar color
     this->bar_text_color = bar_text_color; // set bar text color
 
+}
+
+bool CUI_Window::collidedChild(SDL_Rect other_rect, CUI_ChildObject* &result_child){
+    int render_y = y + viewport_y + 10;
+    for (std::unique_ptr<CUI_ChildObject>& child_object: child_objects){
+        if (child_object->collides(other_rect, x + 10, render_y)){
+            result_child = child_object.get();
+            return true;
+        }
+
+        // increment render y
+        render_y += child_object->nextline;
+    }
+    return false;
 }
 
 void CUI_Window::update(){
@@ -255,22 +296,46 @@ void CUI_Window::update(){
 }
 
 void CUI_Window::clicked(SDL_Rect mouse_rect){
+
     // check if dragging bar rect
     if (SDL_HasIntersection(&bar_rect, &mouse_rect)){
         is_held = true;
     }
+
+    // send click to children
+    CUI_ChildObject* affected_child;
+    if (collidedChild(mouse_rect, affected_child)){
+        affected_child->clicked(mouse_rect);
+    }
+
 }
 
-void CUI_Window::mouseHeld(SDL_Rect mouse_rect){}
+void CUI_Window::mouseHeld(SDL_Rect mouse_rect){
+    // send hold to children
+    CUI_ChildObject* affected_child;
+    if (collidedChild(mouse_rect, affected_child)){
+        affected_child->mouseHeld(mouse_rect);
+    }
+}
 
 void CUI_Window::mouseUp(SDL_Rect mouse_rect){
+
     // check if hit bar rect
     if (SDL_HasIntersection(&bar_rect, &mouse_rect) && (x == before_held_x && y == before_held_y)){
         minimized = (!minimized);
     }
+
+    // send mouseup to children
+    CUI_ChildObject* affected_child;
+    if (collidedChild(mouse_rect, affected_child)){
+        affected_child->mouseUp(mouse_rect);
+    }
+
 }
 
 void CUI_Window::scrolled(SDL_Rect mouse_rect, int scrolled){
+
+    // window scrolling
     if (scrolled == -1){
         viewport_y += cui_min(SCROLL_SCALE, std::abs(35 - viewport_y));
     } else if (scrolled == 1){
@@ -279,6 +344,21 @@ void CUI_Window::scrolled(SDL_Rect mouse_rect, int scrolled){
         if (child_objects_height > height){
             viewport_y -= cui_min(SCROLL_SCALE, std::abs(child_objects_height - height + viewport_y));
         }
+    }
+
+    // send scroll to children
+    CUI_ChildObject* affected_child;
+    if (collidedChild(mouse_rect, affected_child)){
+        affected_child->scrolled(mouse_rect, scrolled);
+    }
+
+}
+
+void CUI_Window::hovered(SDL_Rect mouse_rect){
+    // send hovered to children
+    CUI_ChildObject* affected_child;
+    if (collidedChild(mouse_rect, affected_child)){
+        affected_child->hovered(mouse_rect);
     }
 }
 
@@ -295,7 +375,7 @@ void CUI_Window::render(SDL_Renderer* renderer){
 
     }
 
-    int render_y = y + viewport_y;
+    int render_y = y + viewport_y + 10;
     child_objects_height = 0; // reset child objects height and recalculate
     for (std::unique_ptr<CUI_ChildObject>& child_object: child_objects){
 
@@ -356,6 +436,9 @@ class CUI_Text : public CUI_ChildObject{
         // custom render function
         void render(SDL_Renderer* renderer, int x, int y, CUI_Window* window) override;
 
+        // custom collides functin
+        bool collides(SDL_Rect other_rect){return true;};
+
         // constructor
         CUI_Text(std::string text_content, float size, std::string color, int nextline);
         CUI_Text() = default;
@@ -380,6 +463,128 @@ class CUI_Button : public CUI_ChildObject{
 
     public:
 
+        std::string text; // display text
+        std::string text_color; // text color
+        float text_size;
+        int offset_x, offset_y; // offset when shrink button
+        int width, height; // dimensions
+        int current_width, current_height; // so we can shrink the button
         std::function<void()> on_click; // function called when clicked
+        CUI_Color hovered_color; // color when hovered
+        CUI_Color pressed_color; // color when pressed
+        CUI_Color color; // normal color
+        CUI_Color current_color; // current render color
+
+        // custom render function
+        void render(SDL_Renderer* renderer, int x, int y, CUI_Window* window) override;
+
+        // custom hovered function
+        void hovered(SDL_Rect mouse_rect) override;
+
+        // custom clicked function
+        void clicked(SDL_Rect mouse_rect) override;
+
+        // custom mouseheld function
+        void mouseHeld(SDL_Rect mouse_rect) override;
+
+        // custom collides function
+        bool collides(SDL_Rect other_rect, int x, int y) override;
+
+        // constructor
+        CUI_Button(
+            std::string text,
+            std::string text_color, float text_size,
+            std::function<void()> on_click,
+            int width, int height, int nextline,
+            CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
+        );
 
 };
+
+CUI_Button::CUI_Button(
+    std::string text,
+    std::string text_color, float text_size,
+    std::function<void()> on_click,
+    int width, int height, int nextline,
+    CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
+) : CUI_ChildObject(nextline){
+    
+    this->text = text;
+    this->text_color = text_color;
+    this->text_size = text_size;
+    this->on_click = on_click;
+    this->width = width;
+    this->height = height;
+    this->color = color;
+    this->hovered_color = hovered_color;
+    this->pressed_color = pressed_color;
+
+}
+
+void CUI_Button::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window){
+
+    // apply offsets
+    x += offset_x;
+    y += offset_y;
+
+    // do stuff with cropping rects here
+    SDL_Rect to_draw_rect = {x, y, current_width, current_height};
+    SDL_Rect cropped_rect = getIncludeCrop(to_draw_rect, window->rect);
+    SDL_Rect draw_rect = {x, y, cropped_rect.w, cropped_rect.h};
+
+    // set render draw color
+    SDL_SetRenderDrawColor(renderer, current_color.r, current_color.g, current_color.b, current_color.a);
+
+    // render
+    SDL_RenderFillRect(renderer, &draw_rect);
+
+    // render text
+    renderText(
+        renderer,
+        text_color, text,
+        (x + current_width / 2) - textWidth(text, text_color, text_size) / 2, (y + current_height / 2) - textHeight(text, text_color, text_size) / 2,
+        text_size,
+        current_width,
+        draw_rect
+    );
+
+    // set current render color
+    current_color = color;
+
+    // clear offsets
+    offset_x = 0;
+    offset_y = 0;
+
+    // clear widths
+    current_width = width;
+    current_height = height;
+    
+}
+
+void CUI_Button::hovered(SDL_Rect mouse_rect){
+    current_color = hovered_color;
+}
+
+void CUI_Button::clicked(SDL_Rect mouse_rect){
+    on_click();
+}
+
+void CUI_Button::mouseHeld(SDL_Rect mouse_rect){
+
+    // change color
+    current_color = pressed_color;
+
+    // shrink
+    current_width = width * 0.85;
+    current_height = height * 0.85;
+
+    // change offsets
+    offset_x = width * 0.15 * 0.5;
+    offset_y = height * 0.15 * 0.5;
+
+}
+
+bool CUI_Button::collides(SDL_Rect other_rect, int x, int y){
+    SDL_Rect collision_rect = {x, y, width, height};
+    return SDL_HasIntersection(&collision_rect, &other_rect);
+}
