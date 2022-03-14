@@ -83,7 +83,7 @@ CUI_Button* addButton(
     CUI_Window* window,
     std::string text, std::string text_color, float text_size,
     std::function<void()> on_click,
-    int width, int height, int nextline,
+    int width, int height, int nextline, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
 )
 ```
@@ -101,6 +101,8 @@ CUI_Button* addButton(
 `width`, `height`: Button dimensions.
 
 `nextline`: Number of pixels to render next child object by.
+
+`edge_radius`: Radius of edge. This changes how round the button is.
 
 `color`: Original color of button.
 
