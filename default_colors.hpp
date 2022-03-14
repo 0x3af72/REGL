@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unordered_map>
-#include "cui_objects.hpp"
+
+#include "color.hpp"
 
 #pragma once
 
@@ -15,6 +16,7 @@ std::unordered_map<std::string, CUI_Color> colors_to_init = {
     {"green", CUI_Color(0, 255, 0)},
     {"purple", CUI_Color(230, 230, 250)},
 };
+
 std::string CUI_COLORCODE_WHITE = "white";
 std::string CUI_COLORCODE_BLACK = "black";
 std::string CUI_COLORCODE_RED = "red";

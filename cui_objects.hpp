@@ -1,10 +1,12 @@
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 #include <functional>
 
 #include "extern_functions.hpp"
 #include "sdl_functions.hpp"
 #include "font_renderer.hpp"
+#include "color.hpp"
 
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
@@ -22,22 +24,7 @@ class CUI_Button;
 extern bool mouse_held;
 extern bool mouse_clicked;
 extern SDL_Rect mouse_rect;
-
-// Color class. Used in cui.hpp.
-class CUI_Color{
-    public:
-        int r, g, b, a;
-        CUI_Color(int r, int g, int b, int a = 255){
-            this->r = r;
-            this->g = g;
-            this->b = b;
-            this->a = a;
-            if (r == 255 && g == 255 && b == 255){
-                this->b = 254;
-            }
-        };
-        CUI_Color() = default;
-};
+extern std::unordered_map<std::string, SDL_Cursor*> cui_cursors;
 
 // Base class for all rendered objects.
 class CUI_Object{
@@ -254,10 +241,6 @@ bool CUI_Window::collidedChild(SDL_Rect other_rect, CUI_ChildObject* &result_chi
 
 void CUI_Window::update(){
 
-    // update rects
-    rect = {x, y, width, height + 35};
-    bar_rect = {x, y, width, 35};
-
     // check if holding
     if (is_held){
 
@@ -364,14 +347,15 @@ void CUI_Window::hovered(SDL_Rect mouse_rect){
 
 void CUI_Window::render(SDL_Renderer* renderer){
 
-    // set render draw color to this object's color
-    SDL_SetRenderDrawColor(renderer, color_r, color_g, color_b, color_a);
+    // update rects
+    rect = {x, y, width, height + 35};
+    bar_rect = {x, y, width, 35};
 
     // render window stuff if not minimized
     if (!minimized){
 
-        // draw a rect according to this object's rect
-        SDL_RenderFillRect(renderer, &rect);
+        // draw background rect
+        drawRoundedRect(renderer, rect, 15, CUI_Color(color_r, color_g, color_b, color_a));
 
     }
 
@@ -395,11 +379,13 @@ void CUI_Window::render(SDL_Renderer* renderer){
 
     }
 
-    // bar color
-    SDL_SetRenderDrawColor(renderer, bar_color.r, bar_color.g, bar_color.b, 255);
-
     // draw bar
-    SDL_RenderFillRect(renderer, &bar_rect);
+    drawRoundedRect(renderer, bar_rect, 15, bar_color);
+
+    // fill bottom of drawn bar so it doesnt look weird
+    SDL_Rect fill_rect = {bar_rect.x, bar_rect.y + 20, width + 1, 17};
+    SDL_SetRenderDrawColor(renderer, bar_color.r, bar_color.g, bar_color.b, 255);
+    SDL_RenderFillRect(renderer, &fill_rect);
 
     // write window title
     float text_width = textWidth(name, bar_text_color, 0.7, width * 0.9) / 2;
@@ -465,7 +451,8 @@ class CUI_Button : public CUI_ChildObject{
 
         std::string text; // display text
         std::string text_color; // text color
-        float text_size;
+        float text_size; // text size
+        int edge_radius; // edge radius
         int offset_x, offset_y; // offset when shrink button
         int width, height; // dimensions
         int current_width, current_height; // so we can shrink the button
@@ -495,7 +482,7 @@ class CUI_Button : public CUI_ChildObject{
             std::string text,
             std::string text_color, float text_size,
             std::function<void()> on_click,
-            int width, int height, int nextline,
+            int width, int height, int nextline, int edge_radius,
             CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
         );
 
@@ -505,13 +492,14 @@ CUI_Button::CUI_Button(
     std::string text,
     std::string text_color, float text_size,
     std::function<void()> on_click,
-    int width, int height, int nextline,
+    int width, int height, int nextline, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
 ) : CUI_ChildObject(nextline){
     
     this->text = text;
     this->text_color = text_color;
     this->text_size = text_size;
+    this->edge_radius = edge_radius;
     this->on_click = on_click;
     this->width = width;
     this->height = height;
@@ -532,11 +520,8 @@ void CUI_Button::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window
     SDL_Rect cropped_rect = getIncludeCrop(to_draw_rect, window->rect);
     SDL_Rect draw_rect = {x, y, cropped_rect.w, cropped_rect.h};
 
-    // set render draw color
-    SDL_SetRenderDrawColor(renderer, current_color.r, current_color.g, current_color.b, current_color.a);
-
-    // render
-    SDL_RenderFillRect(renderer, &draw_rect);
+    // draw rounded rect
+    drawRoundedRect(renderer, draw_rect, edge_radius, current_color);
 
     // render text
     renderText(
@@ -544,7 +529,7 @@ void CUI_Button::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window
         text_color, text,
         (x + current_width / 2) - textWidth(text, text_color, text_size) / 2, (y + current_height / 2) - textHeight(text, text_color, text_size) / 2,
         text_size,
-        current_width,
+        10000,
         draw_rect
     );
 
@@ -562,11 +547,17 @@ void CUI_Button::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window
 }
 
 void CUI_Button::hovered(SDL_Rect mouse_rect){
+
+    // change color
     current_color = hovered_color;
+
+    // change cursor
+    SDL_SetCursor(cui_cursors["clickable"]);
+
 }
 
 void CUI_Button::clicked(SDL_Rect mouse_rect){
-    on_click();
+    on_click(); // call function
 }
 
 void CUI_Button::mouseHeld(SDL_Rect mouse_rect){

@@ -7,6 +7,7 @@
 #include "cui_objects.hpp"
 #include "font_renderer.hpp"
 #include "default_colors.hpp"
+#include "color.hpp"
 
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
@@ -54,7 +55,8 @@ void cuiInit(){
         "CUI Application",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         window_width, window_height,
-        SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_BORDERLESS);
+        SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_BORDERLESS
+    );
     cui_renderer = SDL_CreateRenderer(cui_window, -1, SDL_RENDERER_SOFTWARE);
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 
@@ -69,6 +71,7 @@ void cuiInit(){
     // create cursors
     cui_cursors["clickable"] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
     cui_cursors["text"] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+    cui_cursors["default"] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 
 }
 
@@ -96,6 +99,9 @@ bool cuiUpdate(){
     // clear renderer
     SDL_SetRenderDrawColor(cui_renderer, 255, 255, 255, 255);
     SDL_RenderClear(cui_renderer);
+
+    // reset cursor
+    SDL_SetCursor(cui_cursors["default"]);
 
     // get mouse rect
     POINT mouse_pos;
@@ -224,10 +230,10 @@ CUI_Button* addButton(
     CUI_Window* window,
     std::string text, std::string text_color, float text_size,
     std::function<void()> on_click,
-    int width, int height, int nextline,
+    int width, int height, int nextline, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
 ){
-    auto button_object_ptr = std::make_unique<CUI_Button>(text, text_color, text_size, on_click, width, height, nextline, color, hovered_color, pressed_color);
+    auto button_object_ptr = std::make_unique<CUI_Button>(text, text_color, text_size, on_click, width, height, nextline, edge_radius, color, hovered_color, pressed_color);
     auto returned_ptr = button_object_ptr.get();
     window->child_objects.push_back(std::move(button_object_ptr));
     return returned_ptr;

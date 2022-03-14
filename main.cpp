@@ -31,11 +31,11 @@ int main(int argc, char* argv[]){
     int click_count = 0;
     addButton(
         test_win,
-        "click me",
+        "helloworld12345678910",
         CUI_COLORCODE_BLUE,
         1,
         [&click_count](){click_count += 1; std::cout << "click " << click_count << "\n";},
-        200, 100, 110, CUI_Color(200, 200, 200), CUI_Color(100, 100, 100), CUI_Color(50, 50, 50)
+        200, 100, 110, 20, CUI_Color(200, 200, 200), CUI_Color(100, 100, 100), CUI_Color(50, 50, 50)
     );
     addText(test_win, "black text", 1, CUI_COLORCODE_BLACK, 50);
     std::vector<CUI_Text*> texts = {

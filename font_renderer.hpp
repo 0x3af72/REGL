@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 
+#include "color.hpp"
+
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
 #include "SDL2/include/SDL2/SDL_ttf.h"
@@ -99,8 +101,8 @@ void loadFont(
     for (char& character: characters){
         
         std::string char_str(1, character);
-        character_map[color_name][char_str] = Character(renderer, TTF_RenderText_Solid(font, char_str.c_str(), color));
-
+        character_map[color_name][char_str] = Character(renderer, TTF_RenderText_Blended(font, char_str.c_str(), color));
+        
     }
     
 }
