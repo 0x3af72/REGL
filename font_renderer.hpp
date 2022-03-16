@@ -13,6 +13,7 @@
 
 std::string _default_chars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
 SDL_Rect _FILL_RECT_ALL = {0, 0, 10000, 10000};
+TTF_Font* font;
 
 // Character class for managing characters and their respective textures.
 class Character{
@@ -27,7 +28,7 @@ class Character{
         SDL_Texture* texture;
         
         // render function
-        int render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect);
+        int render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect, CUI_Color color);
 
         // constructor
         Character(SDL_Renderer* renderer, SDL_Surface* character_surf);
@@ -38,18 +39,21 @@ class Character{
 Character::Character(SDL_Renderer* renderer, SDL_Surface* character_surf){
 
     // store dimensions
-    width = character_surf->w / 20;
-    height = character_surf->h / 20;
+    width = character_surf->w / 20; // 1
+    height = character_surf->h / 20; // 1
 
     // convert surface to texture
     texture = SDL_CreateTextureFromSurface(renderer, character_surf);
+
+    // set blendmode
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 
     // free surface
     SDL_FreeSurface(character_surf);
 
 }
 
-int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect){
+int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect, CUI_Color color){
 
     // get original rect
     SDL_Rect original_rect = {x, y, int(width * size), int(height * size)};
@@ -63,13 +67,16 @@ int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect
     crop_rect.x *= 20 / size;
     crop_rect.y *= 20 / size;
 
-    // render rect (SIMPLIFY THIS)
+    // render rect
     SDL_Rect rect = {
         int(x + crop_rect.x / 20 * size),
         int(y + 2 + crop_rect.y / 20 * size),
         int(size * width * crop_rect.w / 20 / width),
         int(size * height * crop_rect.h / 20 / height),
     };
+
+    // set color
+    SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
 
     // render
     SDL_RenderCopy(renderer, texture, &crop_rect, &rect);
@@ -80,28 +87,26 @@ int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect
 }
 
 // Map of colors and maps of characters and their corresponding textures.
-std::unordered_map<std::string, std::unordered_map<std::string, Character>> character_map;
+std::unordered_map<std::string, Character> character_map;
 
 // Load a font file and edit the character map accordingly.
 void loadFont(
     SDL_Renderer* renderer,
-    std::string color_name,
     std::string font_file,
-    Uint8 color_r, Uint8 color_g, Uint8 color_b,
     std::string characters = _default_chars
 ){
 
     // load font
-    TTF_Font* font = TTF_OpenFont(font_file.c_str(), 500);
+    font = TTF_OpenFont(font_file.c_str(), 500); // 30
 
-    // convert rgb to sdl color
-    SDL_Color color = {color_r, color_g, color_b};
+    // render text in black
+    SDL_Color color = {255, 255, 255};
 
     // store each character
     for (char& character: characters){
         
         std::string char_str(1, character);
-        character_map[color_name][char_str] = Character(renderer, TTF_RenderText_Blended(font, char_str.c_str(), color));
+        character_map[char_str] = Character(renderer, TTF_RenderText_Blended(font, char_str.c_str(), color));
         
     }
     
@@ -110,7 +115,7 @@ void loadFont(
 // Render text.
 void renderText(
     SDL_Renderer* renderer,
-    std::string color_name,
+    CUI_Color color,
     std::string text,
     int x, int y,
     float size, float max = 10000,
@@ -123,7 +128,7 @@ void renderText(
     for (char& character: text){
 
         std::string char_str(1, character);
-        x += character_map[color_name][char_str].render(renderer, x, y, size, include_rect);
+        x += character_map[char_str].render(renderer, x, y, size, include_rect, color);
 
         // check if more than max width?
         if (x - original_x >= max){
@@ -135,7 +140,7 @@ void renderText(
 }
 
 // Get width of text to be rendered.
-float textWidth(std::string text, std::string color_name, float size, float max = 10000){
+float textWidth(std::string text, float size, float max = 10000){
 
     if (!text.size()){return 0;}
 
@@ -145,7 +150,7 @@ float textWidth(std::string text, std::string color_name, float size, float max 
     for (char& character: text){
 
         std::string char_str(1, character);
-        width += character_map[color_name][char_str].width * size;
+        width += character_map[char_str].width * size;
 
         // check if width exceeded max
         if (width >= max){
@@ -159,11 +164,11 @@ float textWidth(std::string text, std::string color_name, float size, float max 
 }
 
 // Get height of text to be rendered.
-float textHeight(std::string text, std::string color_name, float size){
+float textHeight(std::string text, float size){
 
     if (!text.size()){return 0;}
 
     // all characters have the same height
-    return character_map[color_name][text.substr(0, 1)].height * size;
+    return character_map[text.substr(0, 1)].height * size;
 
 }

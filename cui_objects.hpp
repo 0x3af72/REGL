@@ -123,6 +123,8 @@ class CUI_ChildObject{
     public:
 
         int nextline; // number of pixels to render next child
+        int indent; // indentation in pixels
+        bool enabled = true; // ignore this if it is disabled
 
         // different render function from cui objects
         virtual void render(SDL_Renderer* renderer, int x, int y, CUI_Window* window){};
@@ -152,7 +154,7 @@ class CUI_ChildObject{
         ~CUI_ChildObject(){};
 
         // constructor
-        CUI_ChildObject(int nextline){this->nextline = nextline;};
+        CUI_ChildObject(int nextline, int indent){this->nextline = nextline; this->indent = indent;};
         CUI_ChildObject() = default;
 
 };
@@ -165,7 +167,7 @@ class CUI_Window : public CUI_Object{
         std::string name; // window name
         SDL_Rect bar_rect; // bar rect
         CUI_Color bar_color; // bar color
-        std::string bar_text_color; // bar text color
+        CUI_Color bar_text_color; // bar text color
         bool is_held = false; // bool for checking if window is held
         int hold_origin_x, hold_origin_y; // hold origins
         int before_held_x, before_held_y; // before holding positions
@@ -207,7 +209,7 @@ class CUI_Window : public CUI_Object{
             std::string name,
             int x, int y,
             int width, int height,
-            CUI_Color color, CUI_Color bar_color, std::string bar_text_color
+            CUI_Color color, CUI_Color bar_color, CUI_Color bar_text_color
         );
 
 };
@@ -216,7 +218,7 @@ CUI_Window::CUI_Window(
     std::string name,
     int x, int y,
     int width, int height,
-    CUI_Color color, CUI_Color bar_color, std::string bar_text_color
+    CUI_Color color, CUI_Color bar_color, CUI_Color bar_text_color
 ) : CUI_Object(x, y, width, height, color){
 
     this->name = name; // set name
@@ -362,20 +364,25 @@ void CUI_Window::render(SDL_Renderer* renderer){
     int render_y = y + viewport_y + 10;
     child_objects_height = 0; // reset child objects height and recalculate
     for (std::unique_ptr<CUI_ChildObject>& child_object: child_objects){
+        
+        // ignore if disabled
+        if (child_object->enabled){
 
-        // check if out of height
-        if (!(render_y > y + height) && (render_y + child_object->nextline >= y) && !minimized){
+            // check if out of height
+            if (!(render_y > y + height) && (render_y + child_object->nextline >= y) && !minimized){
 
-            // render and increase render y
-            child_object->render(renderer, x + 10, render_y, this);
+                // render and increase render y
+                child_object->render(renderer, x + child_object->indent, render_y, this);
+
+            }
+
+            // increase render y
+            render_y += child_object->nextline;
+
+            // get total height of child objects
+            child_objects_height += child_object->nextline;
 
         }
-
-        // increase render y
-        render_y += child_object->nextline;
-
-        // get total height of child objects
-        child_objects_height += child_object->nextline;
 
     }
 
@@ -388,7 +395,7 @@ void CUI_Window::render(SDL_Renderer* renderer){
     SDL_RenderFillRect(renderer, &fill_rect);
 
     // write window title
-    float text_width = textWidth(name, bar_text_color, 0.7, width * 0.9) / 2;
+    float text_width = textWidth(name, 0.7, width * 0.9) / 2;
     float render_x = x + (width / 2) - text_width;
     renderText(renderer, bar_text_color, name, render_x, y + 5, 0.7, width * 0.9);
 
@@ -417,7 +424,7 @@ class CUI_Text : public CUI_ChildObject{
 
         std::string text_content; // text content
         float size; // size of text
-        std::string color; // color
+        CUI_Color color; // color
 
         // custom render function
         void render(SDL_Renderer* renderer, int x, int y, CUI_Window* window) override;
@@ -426,13 +433,13 @@ class CUI_Text : public CUI_ChildObject{
         bool collides(SDL_Rect other_rect){return true;};
 
         // constructor
-        CUI_Text(std::string text_content, float size, std::string color, int nextline);
+        CUI_Text(std::string text_content, float size, CUI_Color color, int nextline, int indent);
         CUI_Text() = default;
 
 };
 
-CUI_Text::CUI_Text(std::string text_content, float size, std::string color, int nextline)
-    : CUI_ChildObject(nextline){
+CUI_Text::CUI_Text(std::string text_content, float size, CUI_Color color, int nextline, int indent)
+    : CUI_ChildObject(nextline, indent){
 
     this->text_content = text_content;
     this->size = size;
@@ -450,7 +457,7 @@ class CUI_Button : public CUI_ChildObject{
     public:
 
         std::string text; // display text
-        std::string text_color; // text color
+        CUI_Color text_color; // text color
         float text_size; // text size
         int edge_radius; // edge radius
         int offset_x, offset_y; // offset when shrink button
@@ -480,9 +487,9 @@ class CUI_Button : public CUI_ChildObject{
         // constructor
         CUI_Button(
             std::string text,
-            std::string text_color, float text_size,
+            CUI_Color text_color, float text_size,
             std::function<void()> on_click,
-            int width, int height, int nextline, int edge_radius,
+            int width, int height, int nextline, int indent, int edge_radius,
             CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
         );
 
@@ -490,11 +497,11 @@ class CUI_Button : public CUI_ChildObject{
 
 CUI_Button::CUI_Button(
     std::string text,
-    std::string text_color, float text_size,
+    CUI_Color text_color, float text_size,
     std::function<void()> on_click,
-    int width, int height, int nextline, int edge_radius,
+    int width, int height, int nextline, int indent, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
-) : CUI_ChildObject(nextline){
+) : CUI_ChildObject(nextline, indent){
     
     this->text = text;
     this->text_color = text_color;
@@ -527,7 +534,7 @@ void CUI_Button::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window
     renderText(
         renderer,
         text_color, text,
-        (x + current_width / 2) - textWidth(text, text_color, text_size) / 2, (y + current_height / 2) - textHeight(text, text_color, text_size) / 2,
+        (x + current_width / 2) - textWidth(text, text_size) / 2, (y + current_height / 2) - textHeight(text, text_size) / 2,
         text_size,
         10000,
         draw_rect
@@ -578,4 +585,86 @@ void CUI_Button::mouseHeld(SDL_Rect mouse_rect){
 bool CUI_Button::collides(SDL_Rect other_rect, int x, int y){
     SDL_Rect collision_rect = {x, y, width, height};
     return SDL_HasIntersection(&collision_rect, &other_rect);
+}
+
+class CUI_Checkbox : public CUI_ChildObject{
+
+    public:
+
+        bool checked = false; // checked bool
+        int edge_radius; // edge radius
+        int width, height; // dimensions
+        bool& change_bool; // bool to set when clicked
+        std::function<void()> on_click; // function called when clicked
+        CUI_Color pressed_color; // color when pressed
+        CUI_Color color; // normal color
+        CUI_Color checked_color; // current render color
+
+        // custom render function
+        void render(SDL_Renderer* renderer, int x, int y, CUI_Window* window) override;
+
+        // custom clicked function
+        void clicked(SDL_Rect mouse_rect) override;
+
+        // custom hovered function
+        void hovered(SDL_Rect mouse_rect) override;
+
+        // custom collides function
+        bool collides(SDL_Rect other_rect, int x, int y) override;
+
+        // constructor
+        CUI_Checkbox(
+            bool& change_bool,
+            std::function<void()> on_click,
+            int width, int nextline, int indent, int edge_radius,
+            CUI_Color color, CUI_Color checked_color
+        );
+
+};
+
+CUI_Checkbox::CUI_Checkbox(
+    bool& change_bool,
+    std::function<void()> on_click,
+    int width, int nextline, int indent, int edge_radius,
+    CUI_Color color, CUI_Color checked_color
+) : CUI_ChildObject(nextline, indent), change_bool(change_bool){
+
+    this->on_click = on_click;
+    this->width = width;
+    this->height = width;
+    this->edge_radius = edge_radius;
+    this->color = color;
+    this->checked_color = checked_color;
+
+}
+
+void CUI_Checkbox::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window){
+
+    // do stuff with cropping rects here
+    SDL_Rect to_draw_rect = {x, y, width, height};
+    SDL_Rect cropped_rect = getIncludeCrop(to_draw_rect, window->rect);
+    SDL_Rect draw_rect = {x, y, cropped_rect.w, cropped_rect.h};
+
+    // draw rounded rect
+    drawRoundedRect(renderer, draw_rect, edge_radius, checked ? checked_color : color);
+
+}
+
+void CUI_Checkbox::clicked(SDL_Rect mouse_rect){
+
+    // set checked
+    checked = (!checked);
+
+    // set bool
+    change_bool = checked;
+
+}
+
+bool CUI_Checkbox::collides(SDL_Rect other_rect, int x, int y){
+    SDL_Rect collision_rect = {x, y, width, height};
+    return SDL_HasIntersection(&collision_rect, &other_rect);
+}
+
+void CUI_Checkbox::hovered(SDL_Rect mouse_rect){
+    SDL_SetCursor(cui_cursors["clickable"]); // set cursor to clickable
 }

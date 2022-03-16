@@ -17,14 +17,6 @@ std::unordered_map<std::string, CUI_Color> colors_to_init = {
     {"purple", CUI_Color(230, 230, 250)},
 };
 
-std::string CUI_COLORCODE_WHITE = "white";
-std::string CUI_COLORCODE_BLACK = "black";
-std::string CUI_COLORCODE_RED = "red";
-std::string CUI_COLORCODE_ORANGE = "orange";
-std::string CUI_COLORCODE_YELLOW = "yellow";
-std::string CUI_COLORCODE_BLUE = "blue";
-std::string CUI_COLORCODE_GREEN = "green";
-std::string CUI_COLORCODE_PURPLE = "purple";
 CUI_Color CUI_COLOR_WHITE = colors_to_init["white"];
 CUI_Color CUI_COLOR_BLACK = colors_to_init["black"];
 CUI_Color CUI_COLOR_RED = colors_to_init["red"];

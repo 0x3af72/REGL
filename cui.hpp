@@ -15,6 +15,25 @@
 
 #pragma once
 
+// Function forward declaration
+CUI_Window* createWindow(
+    std::string name,
+    int x, int y,
+    int width, int height,
+    CUI_Color color, CUI_Color bar_color, CUI_Color bar_text_color
+);
+CUI_Button* addButton(
+    CUI_Window* window,
+    std::string text, CUI_Color text_color, float text_size,
+    std::function<void()> on_click,
+    int width, int height, int nextline, int indent, int edge_radius,
+    CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
+);
+void cuiQuit();
+
+// Exit window
+CUI_Window* exit_window;
+
 // SDL Window and Renderer.
 SDL_Window* cui_window;
 SDL_Renderer* cui_renderer;
@@ -43,7 +62,7 @@ SDL_Rect mouse_rect;
 std::vector<std::unique_ptr<CUI_Object>> ui_objects;
 
 // Initialize SDL2.
-void cuiInit(){
+void cuiInit(bool create_exit_window = true){
 
     // init sdl
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -63,15 +82,28 @@ void cuiInit(){
     // make window transparent
     makeWindowTransparent(cui_window, RGB(255, 255, 255));
 
-    // initialize fonts
-    for (auto [color_name, color_class]: colors_to_init){
-        loadFont(cui_renderer, color_name, "fonts/verdana.ttf", color_class.r, color_class.g, color_class.b);
-    }
+    // initialize font
+    loadFont(cui_renderer, "fonts/verdana.ttf");
     
     // create cursors
     cui_cursors["clickable"] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
     cui_cursors["text"] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
     cui_cursors["default"] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+
+    // create exit window
+    if (create_exit_window){
+        exit_window = createWindow("Exit this program", 0, 0, 400, 100, CUI_COLOR_WHITE, CUI_Color(200, 200, 200), CUI_COLOR_BLACK);
+        addButton(
+            exit_window,
+            "Close program",
+            CUI_COLOR_BLACK, 1,
+            cuiQuit,
+            200, 70,
+            70, 100,
+            15,
+            CUI_Color(200, 200, 200), CUI_Color(150, 150, 150), CUI_Color(100, 100, 100)
+        );
+    }
 
 }
 
@@ -203,7 +235,7 @@ CUI_Window* createWindow(
     std::string name,
     int x, int y,
     int width, int height,
-    CUI_Color color, CUI_Color bar_color, std::string bar_text_color
+    CUI_Color color, CUI_Color bar_color, CUI_Color bar_text_color
 ){
     auto window_ptr = std::make_unique<CUI_Window>(name, x, y, width, height, color, bar_color, bar_text_color);
     auto returned_ptr = window_ptr.get();
@@ -216,10 +248,10 @@ CUI_Text* addText(
     CUI_Window* window,
     std::string text_content,
     float size,
-    std::string color,
-    int nextline
+    CUI_Color color,
+    int nextline, int indent
 ){
-    auto text_object_ptr = std::make_unique<CUI_Text>(text_content, size, color, nextline);
+    auto text_object_ptr = std::make_unique<CUI_Text>(text_content, size, color, nextline, indent);
     auto returned_ptr = text_object_ptr.get();
     window->child_objects.push_back(std::move(text_object_ptr));
     return returned_ptr;
@@ -228,13 +260,27 @@ CUI_Text* addText(
 // Add CUI_Button to a window.
 CUI_Button* addButton(
     CUI_Window* window,
-    std::string text, std::string text_color, float text_size,
+    std::string text, CUI_Color text_color, float text_size,
     std::function<void()> on_click,
-    int width, int height, int nextline, int edge_radius,
+    int width, int height, int nextline, int indent, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
 ){
-    auto button_object_ptr = std::make_unique<CUI_Button>(text, text_color, text_size, on_click, width, height, nextline, edge_radius, color, hovered_color, pressed_color);
+    auto button_object_ptr = std::make_unique<CUI_Button>(text, text_color, text_size, on_click, width, height, nextline, indent, edge_radius, color, hovered_color, pressed_color);
     auto returned_ptr = button_object_ptr.get();
     window->child_objects.push_back(std::move(button_object_ptr));
+    return returned_ptr;
+}
+
+// Add CUI_Checkbox to a window.
+CUI_Checkbox* addCheckbox(
+    CUI_Window* window,
+    bool& change_bool,
+    std::function<void()> on_click,
+    int width, int nextline, int indent, int edge_radius,
+    CUI_Color color, CUI_Color checked_color
+){
+    auto checkbox_object_ptr = std::make_unique<CUI_Checkbox>(change_bool, on_click, width, nextline, indent, edge_radius, color, checked_color);
+    auto returned_ptr = checkbox_object_ptr.get();
+    window->child_objects.push_back(std::move(checkbox_object_ptr));
     return returned_ptr;
 }
