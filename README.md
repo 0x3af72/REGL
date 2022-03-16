@@ -24,12 +24,42 @@ int main(int argc, char* argv[]){
     running = cuiUpdate(); // update the program
   }
   
+  cuiQuit(); // close the program properly
+  
   return 0;
 }
 ```
 
+## cuiInit
+This function initializes SDL.
+It sets the SDL window to fullscreen and makes it transparent.
+
+```cpp
+void cuiInit(bool create_exit_window = true)
+```
+
+`create_exit_window`: If this is set to `true`, an exit window is created at the top left of the desktop which the user can use to close the program.
+
+## cuiUpdate
+Call this function in a while loop.
+It returns a `bool` which specifies whether the program has ended.
+This function updates and renders child objects and handles events.
+
+```cpp
+bool cuiUpdate()
+```
+
+## cuiQuit
+Call this function at the end of your program.
+This function closes SDL.
+
+```cpp
+void cuiQuit()
+```
+
 ## CUI_Window
 Windows in CUI contain ui entities, known as child objects.
+Windows can be moved around by holding on their title bar and dragging them around.
 
 ```cpp
 CUI_Window* createWindow(
@@ -60,8 +90,8 @@ CUI_Text* addText(
     CUI_Window* window,
     std::string text_content,
     float size,
-    std::string color,
-    int nextline
+    CUI_Color color,
+    int nextline, int indent
 )
 ```
 
@@ -75,15 +105,17 @@ CUI_Text* addText(
 
 `nextline`: Number of pixels to render next child object by.
 
+`indent`: Indentation of child object in pixels.
+
 ## CUI_Button
 Buttons in CUI call a `void` function when clicked.
 
 ```cpp
 CUI_Button* addButton(
     CUI_Window* window,
-    std::string text, std::string text_color, float text_size,
+    std::string text, CUI_Color text_color, float text_size,
     std::function<void()> on_click,
-    int width, int height, int nextline, int edge_radius,
+    int width, int height, int nextline, int indent, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
 )
 ```
@@ -102,6 +134,8 @@ CUI_Button* addButton(
 
 `nextline`: Number of pixels to render next child object by.
 
+`indent`: Indentation of child object in pixels.
+
 `edge_radius`: Radius of edge. This changes how round the button is.
 
 `color`: Original color of button.
@@ -109,3 +143,35 @@ CUI_Button* addButton(
 `hovered_color`: Color of button when hovered.
 
 `pressed_color`: Color of button when pressed.
+
+
+## CUI_Checkbox
+When clicked, checkboxes change a boolean value and call a `void` function.
+
+```cpp
+CUI_Checkbox* addCheckbox(
+    CUI_Window* window,
+    bool& change_bool,
+    std::function<void()> on_click,
+    int width, int nextline, int indent, int edge_radius,
+    CUI_Color color, CUI_Color checked_color
+)
+```
+
+`window`: The parent window.
+
+`change_bool`: The boolean to change when the checkbox is clicked.
+
+`on_click`: Function to be called when this checkbox is clicked.
+
+`width`: Checkbox dimensions. Height is not an argument as checkboxes are squares.
+
+`nextline`: Number of pixels to render next child object by.
+
+`indent`: Indentation of child object in pixels.
+
+`edge_radius`: Radius of edge. This changes how round the checkbox is.
+
+`color`: Original color of checkbox.
+
+`checked_color`: Color of checkbox when it is checked.
