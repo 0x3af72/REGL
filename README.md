@@ -57,6 +57,15 @@ This function closes SDL.
 void cuiQuit()
 ```
 
+## CUI_Object, CUI_ChildObject
+CUI_Objects contain: `CUI_Window`
+
+CUI_ChildObjects contain: `CUI_Text`, `CUI_Button`, `CUI_Checkbox`
+
+Setting the `enabled` attribute of these objects to false will cause them to be ignored and not be rendered.
+
+Child objects that are disabled will not take up space in windows.
+
 ## CUI_Window
 Windows in CUI contain ui entities, known as child objects.
 Windows can be moved around by holding on their title bar and dragging them around.
