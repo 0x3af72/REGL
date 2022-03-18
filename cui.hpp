@@ -6,7 +6,7 @@
 #include "extern_functions.hpp"
 #include "cui_objects.hpp"
 #include "font_renderer.hpp"
-#include "default_colors.hpp"
+#include "cui_defaults.hpp"
 #include "color.hpp"
 
 #include "SDL2/include/SDL2/SDL.h"
@@ -77,6 +77,7 @@ void cuiInit(bool create_exit_window = true){
         SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_BORDERLESS
     );
     cui_renderer = SDL_CreateRenderer(cui_window, -1, SDL_RENDERER_SOFTWARE);
+    SDL_SetRenderDrawBlendMode(cui_renderer, SDL_BLENDMODE_BLEND);
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 
     // make window transparent
@@ -92,7 +93,7 @@ void cuiInit(bool create_exit_window = true){
 
     // create exit window
     if (create_exit_window){
-        exit_window = createWindow("Exit this program", 0, 0, 400, 100, CUI_COLOR_WHITE, CUI_Color(200, 200, 200), CUI_COLOR_BLACK);
+        exit_window = createWindow("Close this program", 0, 0, 400, 100, CUI_COLOR_WHITE, CUI_Color(200, 200, 200), CUI_COLOR_BLACK);
         addButton(
             exit_window,
             "Close program",

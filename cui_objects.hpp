@@ -7,6 +7,7 @@
 #include "sdl_functions.hpp"
 #include "font_renderer.hpp"
 #include "color.hpp"
+#include "cui_defaults.hpp"
 
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
@@ -230,7 +231,7 @@ CUI_Window::CUI_Window(
 bool CUI_Window::collidedChild(SDL_Rect other_rect, CUI_ChildObject* &result_child){
     int render_y = y + viewport_y + 10;
     for (std::unique_ptr<CUI_ChildObject>& child_object: child_objects){
-        if (child_object->collides(other_rect, x + 10, render_y)){
+        if (child_object->collides(other_rect, x + child_object->indent, render_y)){
             result_child = child_object.get();
             return true;
         }
@@ -359,6 +360,10 @@ void CUI_Window::render(SDL_Renderer* renderer){
         // draw background rect
         drawRoundedRect(renderer, rect, 15, CUI_Color(color_r, color_g, color_b, color_a));
 
+        // fix rect for collision
+        rect.y += 35;
+        rect.h -= 35;
+
     }
 
     int render_y = y + viewport_y + 10;
@@ -368,8 +373,8 @@ void CUI_Window::render(SDL_Renderer* renderer){
         // ignore if disabled
         if (child_object->enabled){
 
-            // check if out of height
-            if (!(render_y > y + height) && (render_y + child_object->nextline >= y) && !minimized){
+            // check if minimized
+            if (!minimized){
 
                 // render and increase render y
                 child_object->render(renderer, x + child_object->indent, render_y, this);
@@ -525,10 +530,10 @@ void CUI_Button::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window
     // do stuff with cropping rects here
     SDL_Rect to_draw_rect = {x, y, current_width, current_height};
     SDL_Rect cropped_rect = getIncludeCrop(to_draw_rect, window->rect);
-    SDL_Rect draw_rect = {x, y, cropped_rect.w, cropped_rect.h};
+    SDL_Rect draw_rect = {x + cropped_rect.x, y + cropped_rect.y, cropped_rect.w, cropped_rect.h}; // for text collision
 
     // draw rounded rect
-    drawRoundedRect(renderer, draw_rect, edge_radius, current_color);
+    drawRoundedRect(renderer, to_draw_rect, edge_radius, current_color, window->rect);
 
     // render text
     renderText(
@@ -599,6 +604,7 @@ class CUI_Checkbox : public CUI_ChildObject{
         CUI_Color pressed_color; // color when pressed
         CUI_Color color; // normal color
         CUI_Color checked_color; // current render color
+        SDL_Texture* tick_texture; // tick texture
 
         // custom render function
         void render(SDL_Renderer* renderer, int x, int y, CUI_Window* window) override;
@@ -640,13 +646,19 @@ CUI_Checkbox::CUI_Checkbox(
 
 void CUI_Checkbox::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window){
 
-    // do stuff with cropping rects here
+    // load texture if not loaded
+    // if (!tick_texture){
+    //     tick_texture = loadTexture(renderer, "images/clean.png");
+    // }
+
+    // rect to draw
     SDL_Rect to_draw_rect = {x, y, width, height};
-    SDL_Rect cropped_rect = getIncludeCrop(to_draw_rect, window->rect);
-    SDL_Rect draw_rect = {x, y, cropped_rect.w, cropped_rect.h};
 
     // draw rounded rect
-    drawRoundedRect(renderer, draw_rect, edge_radius, checked ? checked_color : color);
+    drawRoundedRect(renderer, to_draw_rect, edge_radius, checked ? checked_color : color, window->rect);
+
+    // draw tick
+    // SDL_RenderCopy(renderer, tick_texture, NULL, &draw_rect);
 
 }
 

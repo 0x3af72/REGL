@@ -4,6 +4,7 @@
 #include <string>
 
 #include "color.hpp"
+#include "sdl_functions.hpp"
 
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
@@ -12,7 +13,6 @@
 #pragma once
 
 std::string _default_chars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
-SDL_Rect _FILL_RECT_ALL = {0, 0, 10000, 10000};
 TTF_Font* font;
 
 // Character class for managing characters and their respective textures.
