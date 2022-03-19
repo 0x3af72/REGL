@@ -123,6 +123,7 @@ Buttons in CUI call a `void` function when clicked.
 CUI_Button* addButton(
     CUI_Window* window,
     std::string text, CUI_Color text_color, float text_size,
+    CUI_Color outline_color, float outline_width,
     std::function<void()> on_click,
     int width, int height, int nextline, int indent, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
@@ -136,6 +137,10 @@ CUI_Button* addButton(
 `text_color`: Button text color.
 
 `text_size`: Button text size.
+
+`outline_color`: Color of button outline.
+
+`outline_width`: Width of button outline.
 
 `on_click`: Function to be called when this button is clicked.
 
@@ -163,6 +168,7 @@ CUI_Checkbox* addCheckbox(
     bool& change_bool,
     std::function<void()> on_click,
     int width, int nextline, int indent, int edge_radius,
+    CUI_Color outline_color, float outline_width,
     CUI_Color color, CUI_Color checked_color
 )
 ```
@@ -180,6 +186,10 @@ CUI_Checkbox* addCheckbox(
 `indent`: Indentation of child object in pixels.
 
 `edge_radius`: Radius of edge. This changes how round the checkbox is.
+
+`outline_color`: Color of checkbox outline.
+
+`outline_width`: Width of checkbox outline.
 
 `color`: Original color of checkbox.
 
