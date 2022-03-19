@@ -464,6 +464,8 @@ class CUI_Button : public CUI_ChildObject{
         std::string text; // display text
         CUI_Color text_color; // text color
         float text_size; // text size
+        CUI_Color outline_color; // outline color
+        float outline_width; // outline width
         int edge_radius; // edge radius
         int offset_x, offset_y; // offset when shrink button
         int width, height; // dimensions
@@ -493,6 +495,7 @@ class CUI_Button : public CUI_ChildObject{
         CUI_Button(
             std::string text,
             CUI_Color text_color, float text_size,
+            CUI_Color outline_color, float outline_width,
             std::function<void()> on_click,
             int width, int height, int nextline, int indent, int edge_radius,
             CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
@@ -503,6 +506,7 @@ class CUI_Button : public CUI_ChildObject{
 CUI_Button::CUI_Button(
     std::string text,
     CUI_Color text_color, float text_size,
+    CUI_Color outline_color, float outline_width,
     std::function<void()> on_click,
     int width, int height, int nextline, int indent, int edge_radius,
     CUI_Color color, CUI_Color hovered_color, CUI_Color pressed_color
@@ -511,6 +515,8 @@ CUI_Button::CUI_Button(
     this->text = text;
     this->text_color = text_color;
     this->text_size = text_size;
+    this->outline_color = outline_color;
+    this->outline_width = outline_width;
     this->edge_radius = edge_radius;
     this->on_click = on_click;
     this->width = width;
@@ -531,6 +537,13 @@ void CUI_Button::render(SDL_Renderer* renderer, int x, int y, CUI_Window* window
     SDL_Rect to_draw_rect = {x, y, current_width, current_height};
     SDL_Rect cropped_rect = getIncludeCrop(to_draw_rect, window->rect);
     SDL_Rect draw_rect = {x + cropped_rect.x, y + cropped_rect.y, cropped_rect.w, cropped_rect.h}; // for text collision
+
+    // draw outline
+    SDL_Rect outline_draw_rect = {
+        int(x - outline_width / 2), int(y - outline_width / 2),
+        int(current_width + outline_width) + 1, int(current_height + outline_width) + 1
+    };
+    drawRoundedRect(renderer, outline_draw_rect, edge_radius, outline_color, window->rect);
 
     // draw rounded rect
     drawRoundedRect(renderer, to_draw_rect, edge_radius, current_color, window->rect);
@@ -599,6 +612,8 @@ class CUI_Checkbox : public CUI_ChildObject{
         bool checked = false; // checked bool
         int edge_radius; // edge radius
         int width, height; // dimensions
+        CUI_Color outline_color; // outline color
+        float outline_width; // outline width
         bool& change_bool; // bool to set when clicked
         std::function<void()> on_click; // function called when clicked
         CUI_Color pressed_color; // color when pressed
@@ -623,6 +638,7 @@ class CUI_Checkbox : public CUI_ChildObject{
             bool& change_bool,
             std::function<void()> on_click,
             int width, int nextline, int indent, int edge_radius,
+            CUI_Color outline_color, float outline_width,
             CUI_Color color, CUI_Color checked_color
         );
 
@@ -632,6 +648,7 @@ CUI_Checkbox::CUI_Checkbox(
     bool& change_bool,
     std::function<void()> on_click,
     int width, int nextline, int indent, int edge_radius,
+    CUI_Color outline_color, float outline_width,
     CUI_Color color, CUI_Color checked_color
 ) : CUI_ChildObject(nextline, indent), change_bool(change_bool){
 
@@ -639,6 +656,8 @@ CUI_Checkbox::CUI_Checkbox(
     this->width = width;
     this->height = width;
     this->edge_radius = edge_radius;
+    this->outline_color = outline_color;
+    this->outline_width = outline_width;
     this->color = color;
     this->checked_color = checked_color;
 
@@ -650,6 +669,13 @@ void CUI_Checkbox::render(SDL_Renderer* renderer, int x, int y, CUI_Window* wind
     // if (!tick_texture){
     //     tick_texture = loadTexture(renderer, "images/clean.png");
     // }
+
+    // draw outline
+    SDL_Rect outline_draw_rect = {
+        int(x - outline_width / 2), int(y - outline_width / 2),
+        int(width + outline_width) + 1, int(height + outline_width) + 1
+    };
+    drawRoundedRect(renderer, outline_draw_rect, edge_radius, outline_color, window->rect);
 
     // rect to draw
     SDL_Rect to_draw_rect = {x, y, width, height};

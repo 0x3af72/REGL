@@ -35,14 +35,14 @@ int main(int argc, char* argv[]){
     };
 
     bool selected = false;
-    addCheckbox(test_2, selected, [](){}, 50, 60, 10, 20, CUI_COLOR_ORANGE, CUI_COLOR_RED);
+    addCheckbox(test_2, selected, [](){}, 50, 60, 10, 20, CUI_COLOR_WHITE, 5, CUI_COLOR_ORANGE, CUI_COLOR_RED);
     for (int i = 0; i != 100; i++){
         if (i == 6){
             addButton(
                 test_2,
                 "helloworld12345678910",
-                CUI_COLOR_BLUE,
-                1,
+                CUI_COLOR_BLUE, 1,
+                CUI_COLOR_WHITE, 10,
                 [&click_count](){click_count += 1; std::cout << "click " << click_count << "\n";},
                 200, 100, 110, 10, 20, CUI_Color(200, 200, 200), CUI_Color(100, 100, 100), CUI_Color(50, 50, 50)
             );
