@@ -9,6 +9,8 @@ To use REGL, you'll have to link some SDL2 binaries. A sample compile command wo
 (please modify this command if your main.cpp is not in the same folder as regl.hpp)
 
 ## SETUP
+<details>
+<summary>Read more</summary>
 A minimal REGL program:
 
 ```cpp
@@ -29,8 +31,11 @@ int main(int argc, char* argv[]){
   return 0;
 }
 ```
+</details>
 
 ## reglInit
+<details>
+<summary>Read more</summary>
 This function **initializes SDL**.
 
 It sets the SDL window to fullscreen and makes it transparent.
@@ -42,8 +47,11 @@ void reglInit(bool create_exit_window = true, Uint32 renderer_flags = REGL_RENDE
 `create_exit_window`: If this is set to `true`, an exit window is created at the top left of the desktop which the user can use to close the program.
 
 `renderer_flags`: REGL renderer flags OR'd together.
+</details>
 
 ## reglUpdate
+<details>
+<summary>Read more</summary>
 Call this function in a while loop.
 
 It returns a `bool` which specifies whether the program has ended.
@@ -53,16 +61,22 @@ This function **updates and renders** child objects and **handles events**.
 ```cpp
 bool reglUpdate()
 ```
+</details>
 
 ## reglQuit
+<details>
+<summary>Read more</summary>
 Call this function at the end of your program.
 This function closes SDL.
 
 ```cpp
 void reglQuit()
 ```
+</details>
 
 ## REGL defaults
+<details>
+<summary>Read more</summary>
 There are some **default variables** in REGL.
 
 **RENDERER FLAGS**
@@ -81,15 +95,21 @@ Use this as the `scene` argument when creating child objects for the window scen
 **REGL_COLOR**
 
 You can access builtin colors using `REGL_COLOR_<color_name>`.
+</details>
 
 ## REGL_Color
+<details>
+<summary>Read more</summary>
 You can create a `REGL_Color` object in the format:
 
 `REGL_Color(color_r, color_g, color_b, color_a)`
 
 `color_a` is optional and set to `255` by default.
+</details>
 
 ## REGL_Object, REGL_ChildObject
+<details>
+<summary>Read more</summary>
 REGL_Objects contain: `REGL_Window`
 
 REGL_ChildObjects contain: `REGL_Text`, `REGL_Button`, `REGL_Checkbox`
@@ -97,8 +117,11 @@ REGL_ChildObjects contain: `REGL_Text`, `REGL_Button`, `REGL_Checkbox`
 Setting the `enabled` attribute of these objects to false will cause them to be ignored and not be rendered.
 
 Child objects that are disabled will not take up space in windows.
+</details>
 
 ## REGL_Window
+<details>
+<summary>Read more</summary>
 Windows in REGL contain **ui entities**, known as child objects.
 
 Windows can be moved around by holding on their **title bar** and dragging them around.
@@ -139,8 +162,11 @@ REGL_Window* createWindow(
 `scrollbar_width`: Scrollbar width.
 
 `scrollbar_color`: Scrollbar color.
+</details>
 
 ## REGL_Text
+<details>
+<summary>Read more</summary>
 Texts in REGL **display text** in a parent window.
 
 **Textwrap** can be applied to them for a more appealing look.
@@ -175,8 +201,11 @@ REGL_Text* addText(
 `nextline`: Number of pixels to render next child object by.
 
 `indent`: Indentation of child object in pixels.
+</details>
 
 ## REGL_Button
+<details>
+<summary>Read more</summary>
 Buttons in REGL call a `void` function when clicked.
 
 ```cpp
@@ -219,9 +248,12 @@ REGL_Button* addButton(
 `hovered_color`: Color of button when hovered.
 
 `pressed_color`: Color of button when pressed.
+</details>
 
 
 ## REGL_Checkbox
+<details>
+<summary>Read more</summary>
 When clicked, checkboxes **change a boolean value** and call a `void` function.
 
 ```cpp
@@ -261,3 +293,4 @@ REGL_Checkbox* addCheckbox(
 `checked_color`: Color of checkbox when it is checked.
 
 `tick_color`: Color of the tick which is visible when the checkbox is checked.
+</details>
