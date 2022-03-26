@@ -2,7 +2,7 @@
 #include <unordered_map>
 
 #include "color.hpp"
-#include "cui_defaults.hpp"
+#include "regl_defaults.hpp"
 
 #include "SDL2/include/SDL2/SDL.h"
 #include "SDL2/include/SDL2/SDL_image.h"
@@ -37,7 +37,7 @@ SDL_Texture* loadTexture(SDL_Renderer* renderer, std::string path){
 }
 
 // Get relative crop rect of rect supposed to be rendered
-SDL_Rect getIncludeCrop(SDL_Rect original_rect, SDL_Rect include_rect, bool debug = false){
+SDL_Rect getIncludeCrop(SDL_Rect original_rect, SDL_Rect include_rect){
 
     // crop rect
     SDL_Rect crop_rect;
@@ -72,7 +72,7 @@ void SDL_FillIncludeRect(SDL_Renderer* renderer, SDL_Rect original_rect, SDL_Rec
 }
 
 // Fill a circle. Code formatted from: https://gist.github.com/Gumichan01/332c26f6197a432db91cc4327fcabb1c
-void SDL_RenderFillCircle(SDL_Renderer* renderer, int x, int y, int radius, CUI_Color color){
+void SDL_RenderFillCircle(SDL_Renderer* renderer, int x, int y, int radius, REGL_Color color){
 
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
@@ -114,14 +114,14 @@ void SDL_RenderFillCircle(SDL_Renderer* renderer, int x, int y, int radius, CUI_
 }
 
 // Render a rectangle with rounded edges.
-void drawRoundedRect(SDL_Renderer* renderer, SDL_Rect original_rect, int radius, CUI_Color color, SDL_Rect include_rect = _FILL_RECT_ALL){
+void drawRoundedRect(SDL_Renderer* renderer, SDL_Rect original_rect, int radius, REGL_Color color, SDL_Rect include_rect = _FILL_RECT_ALL){
 
-    // Create circle texture if not created
+    // create circle texture if not created
     if (!_circle_texture){
         _circle_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 101, 101);
         SDL_SetTextureBlendMode(_circle_texture, SDL_BLENDMODE_BLEND);
         SDL_SetRenderTarget(renderer, _circle_texture);
-        SDL_RenderFillCircle(renderer, 50, 50, 50, CUI_COLOR_WHITE);
+        SDL_RenderFillCircle(renderer, 50, 50, 50, REGL_COLOR_WHITE);
         SDL_SetRenderTarget(renderer, NULL);
     }
 
@@ -171,7 +171,7 @@ void drawRoundedRect(SDL_Renderer* renderer, SDL_Rect original_rect, int radius,
     circle_rect.x += inner_rect.w;
 
     // get part to crop
-    cropped_rect = getIncludeCrop(circle_rect, include_rect, true);
+    cropped_rect = getIncludeCrop(circle_rect, include_rect);
 
     // get new circle rect
     render_rect = {
@@ -239,8 +239,7 @@ void drawRoundedRect(SDL_Renderer* renderer, SDL_Rect original_rect, int radius,
     SDL_FillIncludeRect(renderer, outer_rect, include_rect);
 
     // fill bottom rect
-    outer_rect.y += inner_rect.h + radius - 2;
-    outer_rect.h += 3;
+    outer_rect.y += inner_rect.h + radius + 1;
     SDL_FillIncludeRect(renderer, outer_rect, include_rect);
 
     // fill left rect
@@ -249,7 +248,57 @@ void drawRoundedRect(SDL_Renderer* renderer, SDL_Rect original_rect, int radius,
 
     // fill right rect
     outer_rect.x += inner_rect.w + radius;
-    outer_rect.w += 1;
     SDL_FillIncludeRect(renderer, outer_rect, include_rect);
+
+}
+
+// Render a rounded horizontal line with width.
+void drawRoundedHorizontalLine(SDL_Renderer* renderer, SDL_Rect original_rect, REGL_Color color){
+
+    // create circle texture if not created
+    if (!_circle_texture){
+        _circle_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 101, 101);
+        SDL_SetTextureBlendMode(_circle_texture, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderTarget(renderer, _circle_texture);
+        SDL_RenderFillCircle(renderer, 50, 50, 50, REGL_COLOR_WHITE);
+        SDL_SetRenderTarget(renderer, NULL);
+    }
+
+    // get radius
+    int radius = original_rect.w / 2;
+
+    // set render draw color
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+    if (original_rect.h > 0){
+
+        // draw the original rect
+        SDL_Rect inner_rect = {original_rect.x, original_rect.y + radius, original_rect.w, original_rect.h - radius * 2};
+        SDL_RenderFillRect(renderer, &inner_rect);
+
+        // circle rect
+        SDL_Rect circle_rect;
+
+        // set circle color
+        SDL_SetTextureColorMod(_circle_texture, color.r, color.g, color.b);
+
+        // draw top circle
+        circle_rect = {original_rect.x, original_rect.y, radius * 2, radius * 2};
+        SDL_RenderCopy(renderer, _circle_texture, NULL, &circle_rect);
+
+        // draw bottom circle
+        circle_rect.y += inner_rect.h;
+        SDL_RenderCopy(renderer, _circle_texture, NULL, &circle_rect);
+
+    } else {
+
+        // set circle color
+        SDL_SetTextureColorMod(_circle_texture, color.r, color.g, color.b);
+
+        // just draw a circle
+        SDL_Rect circle_rect = {original_rect.x, original_rect.y, radius * 2, radius * 2};
+        SDL_RenderCopy(renderer, _circle_texture, NULL, &circle_rect);
+
+    }
 
 }

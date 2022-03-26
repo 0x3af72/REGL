@@ -12,7 +12,7 @@
 
 #pragma once
 
-std::string _default_chars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
+std::string _default_chars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()?.,[]{};:'\"/<>+=-_";
 TTF_Font* font;
 
 // Character class for managing characters and their respective textures.
@@ -28,7 +28,7 @@ class Character{
         SDL_Texture* texture;
         
         // render function
-        int render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect, CUI_Color color);
+        int render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect, REGL_Color color);
 
         // constructor
         Character(SDL_Renderer* renderer, SDL_Surface* character_surf);
@@ -53,7 +53,7 @@ Character::Character(SDL_Renderer* renderer, SDL_Surface* character_surf){
 
 }
 
-int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect, CUI_Color color){
+int Character::render(SDL_Renderer* renderer, int x, int y, float size, SDL_Rect include_rect, REGL_Color color){
 
     // get original rect
     SDL_Rect original_rect = {x, y, int(width * size), int(height * size)};
@@ -115,7 +115,7 @@ void loadFont(
 // Render text.
 void renderText(
     SDL_Renderer* renderer,
-    CUI_Color color,
+    REGL_Color color,
     std::string text,
     int x, int y,
     float size, float max = 10000,
@@ -160,6 +160,46 @@ float textWidth(std::string text, float size, float max = 10000){
     }
 
     return width;
+
+}
+
+// Get last character before text wrap.
+int textWrapIndex(std::string text, float size, float max = 10000, bool wrap_by_words = false){
+
+    if (!text.size()){return 0;}
+
+    float width = 0;
+
+    // last space (for wrapping by words)
+    int last_space_index = -1;
+
+    // go through widths
+    int index = 0;
+    for (char& character: text){
+
+        std::string char_str(1, character);
+        width += character_map[char_str].width * size;
+
+        // check if is a space
+        if (char_str == " "){
+            last_space_index = index;
+        }
+
+        // check if is newline
+        if (char_str == "\n"){
+            return index + 1;
+        }
+
+        // check if width exceeded max
+        if (width >= max){
+            return (wrap_by_words) ? ((last_space_index == -1) ? -1 : last_space_index + 1) : index;
+        }
+
+        index += 1;
+
+    }
+
+    return -1;
 
 }
 
